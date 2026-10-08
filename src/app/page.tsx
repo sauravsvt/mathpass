@@ -10,293 +10,208 @@ import Features from '@/components/Features';
 import FAQ from '@/components/FAQ';
 import Footer from '@/components/Footer';
 import AdBanner from '@/components/AdBanner';
+import { ACCOUNTING, DEFAULT_CONSTANT } from '@/lib/accounting';
+import { PI_ANCHOR } from '@/lib/catalog';
 
 export default function Home() {
   const [selectedConstantId, setSelectedConstantId] = useState<string | undefined>(undefined);
-
-  const handleSelectConstant = (constantId: string) => {
-    setSelectedConstantId(constantId);
-  };
 
   return (
     <main className="min-h-screen">
       <Header />
 
-      {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-4 pt-12 pb-6 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-600/15 border border-primary-500/30 text-primary-300 text-xs md:text-sm mb-6 shadow-sm">
-          <span>🛡️</span>
-          <span>Zero-Knowledge Cryptographic Password Engine</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-600/15 border border-primary-500/30 text-primary-300 text-xs md:text-sm mb-6">
+          Client-side · Open source · Strength you can verify
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
-          Passwords That Are{' '}
-          <span className="gradient-text">Hard to Crack</span>,{' '}
+          Passphrases That Are{' '}
+          <span className="gradient-text">Hard to Guess</span>,{' '}
           <br className="hidden sm:inline" />
           Easy to <span className="gradient-text">Remember</span>
         </h1>
 
         <p className="text-gray-300 text-base md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">
-          Stop struggling with forgettable random gibberish. Turn{' '}
+          Hang random dictionary words on{' '}
           <span className="text-primary-300 font-bold">π</span>,{' '}
           <span className="text-primary-300 font-bold">e</span>,{' '}
           <span className="text-primary-300 font-bold">φ</span>, and{' '}
-          <span className="text-primary-300 font-bold">√2</span> into uncrackable passwords with clever math puns, memorable stories, and dual-layer cryptographic protection.
+          <span className="text-primary-300 font-bold">c</span>. Each result shows the exact generated strength in bits, assuming an attacker has this source.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-400 mb-6">
-          <span className="flex items-center gap-1">✓ 100% Client-Side Privacy</span>
-          <span className="text-gray-600">•</span>
-          <span className="flex items-center gap-1">✓ Free &amp; Open Source</span>
-          <span className="text-gray-600">•</span>
-          <span className="flex items-center gap-1">✓ Hardware CSPRNG Isolation</span>
-          <span className="text-gray-600">•</span>
-          <span className="flex items-center gap-1">✓ Anti-Cracker Salt Protection</span>
+          <span>Generated in your browser</span>
+          <span className="text-gray-600">·</span>
+          <span>Free and open source</span>
+          <span className="text-gray-600">·</span>
+          <span>Web Crypto randomness</span>
+          <span className="text-gray-600">·</span>
+          <span>Optional personal text</span>
         </div>
 
-        {/* Scrolling constants ticker */}
         <div className="overflow-hidden py-2.5 px-4 bg-white/5 rounded-2xl border border-white/5 max-w-3xl mx-auto mb-4">
           <div className="flex gap-6 animate-marquee whitespace-nowrap text-gray-400 text-xs font-mono">
             <span>π = 3.14159...</span>
-            <span>•</span>
+            <span>·</span>
             <span>h = 6.62607×10⁻³⁴</span>
-            <span>•</span>
+            <span>·</span>
             <span>c = 299,792,458 m/s</span>
-            <span>•</span>
+            <span>·</span>
             <span>e = 2.71828...</span>
-            <span>•</span>
+            <span>·</span>
             <span>φ = 1.61803...</span>
-            <span>•</span>
-            <span>k_B = 1.3806×10⁻²³</span>
-            <span>•</span>
+            <span>·</span>
             <span>√2 = 1.41421...</span>
-            <span>•</span>
-            <span>ħ = 1.05457×10⁻³⁴</span>
-            <span>•</span>
+            <span>·</span>
             <span>τ = 6.28318...</span>
-            <span>•</span>
-            <span>G = 6.6743×10⁻¹¹</span>
-            <span>•</span>
-            <span>N_A = 6.022×10²³</span>
-            <span>•</span>
-            <span>e^(π√163) = 262537...</span>
-            <span>•</span>
-            <span>α ≈ 1/137.036</span>
           </div>
         </div>
       </section>
 
-      {/* Top Billboard Ad Slot */}
       <AdBanner slot="top-leaderboard" format="leaderboard" />
 
-      {/* Password Generator Core */}
       <PasswordGenerator initialConstantId={selectedConstantId} />
 
-      {/* Anti-Cracker Defense Section (Marketing & Security Focus) */}
       <section id="anti-cracker" className="max-w-4xl mx-auto px-4 py-16 scroll-mt-20">
-        <div className="glass-card rounded-3xl p-8 md:p-12 border border-primary-500/30 relative overflow-hidden bg-gradient-to-br from-primary-950/20 via-black/40 to-accent-950/20">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="glass-card rounded-3xl p-8 md:p-12 border border-primary-500/30 bg-black/40">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/15 border border-accent-500/30 text-accent-300 text-xs font-bold mb-3 uppercase tracking-wider">
-              🛡️ Kerckhoffs&apos;s Principle Defense
+              Kerckhoffs&apos;s principle
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-              The <span className="gradient-text">Anti-Cracker Defense</span>
+              The <span className="gradient-text">public-source</span> threat model
             </h2>
             <p className="text-gray-300 text-sm md:text-base max-w-2xl mx-auto mt-2 leading-relaxed">
-              &ldquo;What if an attacker knows I used MathPass? Can they abuse the system to crack my password?&rdquo;
+              What if an attacker knows you used MathPass? The bit count already assumes they have this code.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-sm">
-            {/* The Trap of Generic Tools */}
             <div className="p-5 rounded-2xl bg-red-950/20 border border-red-500/20">
-              <div className="flex items-center gap-2 text-red-400 font-bold mb-2">
-                <span>⚠️</span>
-                <span>The Flaw in Ordinary Generators</span>
-              </div>
+              <div className="text-red-400 font-bold mb-2">Short public templates</div>
               <p className="text-gray-400 text-xs leading-relaxed mb-3">
-                If a generator only swaps words into static templates, an attacker who inspects the tool can test every possible combination in seconds. A 30,000-combination keyspace can be devoured by modern Hashcat clusters in <strong>0.05 seconds</strong>.
+                If a generator only fills a small set of puns and digit slices, an attacker who reads the source can enumerate that list. A 14-bit space is not a 100-bit space.
               </p>
               <div className="text-[11px] font-mono text-red-300 bg-black/40 p-2.5 rounded-lg border border-red-500/20">
-                Targeted Search Space: ~30,000 guesses (CRACKED IN MILLISECONDS)
+                Old MathPass templates: about 5–20 generated bits
               </div>
             </div>
 
-            {/* The Dual-Layer Solution */}
             <div className="p-5 rounded-2xl bg-green-950/20 border border-green-500/20">
-              <div className="flex items-center gap-2 text-green-400 font-bold mb-2">
-                <span>🛡️</span>
-                <span>MathPass Dual-Layer Architecture</span>
-              </div>
+              <div className="text-green-400 font-bold mb-2">Uniform random words</div>
               <p className="text-gray-400 text-xs leading-relaxed mb-3">
-                MathPass eliminates this vulnerability by infusing <strong>CSPRNG hardware entropy</strong> with an optional <strong>Personal Secret Anchor</strong>.
+                Each word is drawn uniformly from {ACCOUNTING.wordlistSize.toLocaleString()} entries (6^5), adding {ACCOUNTING.wordBits.toFixed(2)} bits that knowing the source cannot remove.
               </p>
               <div className="text-[11px] font-mono text-green-300 bg-black/40 p-2.5 rounded-lg border border-green-500/20">
-                Targeted Search Space: &gt; 2⁸⁰ to 2¹²⁰ combinations (UNCRACKABLE)
+                Random-constant sample: 2^{DEFAULT_CONSTANT.everyday.bits.toFixed(1)} Everyday · 2^{DEFAULT_CONSTANT.strong.bits.toFixed(1)} Strong · 2^{DEFAULT_CONSTANT.master.bits.toFixed(1)} Master
               </div>
             </div>
           </div>
 
-          {/* How the Dual-Layer Works */}
           <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <span>🔬</span>
-              <span>How the Dual-Layer Security Model Protects You</span>
-            </h3>
-
+            <h3 className="text-base font-bold text-white mb-4">What each layer actually does</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="p-3.5 rounded-xl bg-black/30 border border-white/5">
-                <div className="text-primary-300 font-bold text-sm mb-1">Layer 1: The Constant</div>
+                <div className="text-primary-300 font-bold text-sm mb-1">The constant</div>
                 <p className="text-gray-400 leading-relaxed">
-                  You pick a math constant ($\pi$, $e$, $\varphi$). This acts as your <em>cognitive memory anchor</em> so you never forget the base of your password.
+                  You pick a math constant. It is a memory cue worth at most about 5.5 bits if chosen at random, and 0 bits if pinned.
                 </p>
               </div>
-
               <div className="p-3.5 rounded-xl bg-black/30 border border-white/5">
-                <div className="text-accent-300 font-bold text-sm mb-1">Layer 2: Personal Anchor</div>
+                <div className="text-accent-300 font-bold text-sm mb-1">Personal text</div>
                 <p className="text-gray-400 leading-relaxed">
-                  You add an optional private keyword (pet, coffee, street). This injects <em>private salt</em> that no automated dictionary on earth can anticipate.
+                  Optional extra text, appended exactly. It adds strength only if it is hard to guess. Pet names and foods are in cracking dictionaries, so we estimate the bits and show you.
                 </p>
               </div>
-
               <div className="p-3.5 rounded-xl bg-black/30 border border-white/5">
-                <div className="text-green-300 font-bold text-sm mb-1">Layer 3: Hardware CSPRNG</div>
+                <div className="text-green-300 font-bold text-sm mb-1">Web Crypto words</div>
                 <p className="text-gray-400 leading-relaxed">
-                  MathPass uses browser <code className="text-white">crypto.getRandomValues</code> to shuffle delimiters, digit offsets, and casing with true hardware randomness.
+                  MathPass uses the browser&apos;s cryptographically secure random number generator with rejection sampling. There is no Math.random fallback.
                 </p>
               </div>
             </div>
-
             <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-              <span>
-                Even if an attacker reads every line of the MathPass source code on GitHub, they still face an impossible cryptographic wall.
-              </span>
-              <a
-                href="#generator"
-                className="font-bold text-primary-300 hover:text-primary-200 flex items-center gap-1 flex-shrink-0"
-              >
-                <span>Try it now</span>
-                <span>→</span>
+              <span>The bit count already assumes the attacker has read every line of this source.</span>
+              <a href="#generator" className="font-bold text-primary-300 hover:text-primary-200">
+                Try it now →
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
       <HowItWorks />
-
-      {/* Live Password Auditor / Tester */}
       <PasswordTester />
-
-      {/* Mid Content Ad Slot */}
       <AdBanner slot="mid-content" format="horizontal" />
-
-      {/* Encyclopedia Table of Mathematical Constants */}
-      <ConstantsTable onSelectConstant={handleSelectConstant} />
-
-      {/* Features Grid */}
+      <ConstantsTable onSelectConstant={setSelectedConstantId} />
       <Features />
 
-      {/* In-Depth SEO Editorial Article on Password Security */}
       <article className="max-w-4xl mx-auto px-4 py-16 text-gray-300">
         <div className="glass-card rounded-3xl p-8 md:p-12 border border-white/10">
           <header className="text-center mb-10">
-            <span className="text-xs uppercase tracking-widest text-primary-400 font-bold">
-              Cryptographic Deep Dive
-            </span>
+            <span className="text-xs uppercase tracking-widest text-primary-400 font-bold">How the numbers work</span>
             <h2 className="text-3xl md:text-4xl font-bold mt-2 text-white">
-              The Science of <span className="gradient-text">Mathematical Passwords</span>
+              The math of <span className="gradient-text">MathPass bits</span>
             </h2>
             <p className="text-gray-400 text-sm max-w-2xl mx-auto mt-2">
-              Why combining irrational numbers with cognitive memory anchors defeats brute-force crackers while freeing you from password frustration.
+              Generated strength is log2 of the number of equally likely passwords this generator could have produced.
             </p>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm leading-relaxed">
             <div>
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🧠</span>
-                <span>The Cognitive Anchor Advantage</span>
-              </h3>
+              <h3 className="text-lg font-bold text-white mb-2">A cue you already know</h3>
               <p className="text-gray-400 mb-3">
-                Psychological studies show that purely random strings like <code className="text-accent-300 bg-black/40 px-1 py-0.5 rounded">x7$kQ9!mP</code> suffer from exponential memory decay within 48 hours. Humans inevitably write them on sticky notes, reuse them across accounts, or resort to dangerous variations of &ldquo;Password123!&rdquo;.
+                A string like <code className="text-accent-300 bg-black/40 px-1 py-0.5 rounded">x7$kQ9!mP</code> is dense and easy to mistype. A constant you already know gives the passphrase a handle.
               </p>
               <p className="text-gray-400">
-                MathPass applies <strong className="text-white">cognitive memory anchors</strong>. You already have neural pathways for concepts like Pi (3.14159), the Golden Ratio (1.618), or Pythagoras (1.414). By anchoring your password to a mathematical identity and pairing it with a funny mnemonic or phrase, you leverage existing long-term memory.
+                The constant is public. Security comes from the words drawn uniformly at random after it, not from hiding π.
               </p>
             </div>
-
             <div>
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🛡️</span>
-                <span>Entropy Without Gibberish</span>
-              </h3>
+              <h3 className="text-lg font-bold text-white mb-2">Entropy without theater</h3>
               <p className="text-gray-400 mb-3">
-                A common misconception is that passwords must be unpronounceable to be secure. What actually stops dictionary attacks and GPUs is <strong className="text-white">Shannon entropy</strong> (the number of possible permutations a cracker must compute).
+                Charset-size times length measures a different generator: a uniform random string of that shape. MathPass is not that generator.
               </p>
               <p className="text-gray-400">
-                A 16-character MathPass password mixing uppercase letters, lowercase letters, decimals, and symbols delivers over <strong className="text-white">80 to 95 bits of entropy</strong>. At 100 billion guesses per second, testing that search space would require <strong className="text-accent-300">millions of years</strong> of continuous supercomputing power.
+                A default Strong passphrase (constant plus {DEFAULT_CONSTANT.strong.words} words) has {DEFAULT_CONSTANT.strong.bits.toFixed(1)} generated bits. Times depend on the site&apos;s hash and rate limits.
               </p>
             </div>
-
             <div>
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>😄</span>
-                <span>The Power of Math Puns</span>
-              </h3>
+              <h3 className="text-lg font-bold text-white mb-2">Puns are cues, not secrets</h3>
               <p className="text-gray-400 mb-3">
-                Humor is one of the brain&apos;s strongest recall catalysts. Passwords generated with our Punster mode (like <code className="text-primary-300 bg-black/40 px-1 py-0.5 rounded">Pi_R8@3.1415!</code> for &ldquo;Pirate Pi&rdquo; or <code className="text-primary-300 bg-black/40 px-1 py-0.5 rounded">Phi_nomenal#1618$</code>) bring a smile to your face whenever you log in.
+                Pun style still uses random words. A string like <code className="text-primary-300 bg-black/40 px-1 py-0.5 rounded">CutiePi3.1416-harbor-velvet-cactus-otter</code> is strong because of the four words, not because of the joke. The Constant-style cue is {PI_ANCHOR}.
               </p>
-              <p className="text-gray-400">
-                You never look at a sheet of paper to remember who you are. You simply recall the joke and the math constant, and your fingers type the characters effortlessly.
-              </p>
+              <p className="text-gray-400">The recall line repeats the exact password, piece by piece.</p>
             </div>
-
             <div>
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🔒</span>
-                <span>True Client-Side Isolation</span>
-              </h3>
+              <h3 className="text-lg font-bold text-white mb-2">Local generation</h3>
               <p className="text-gray-400 mb-3">
-                Many online password generators transmit user requests back to a cloud backend. MathPass is engineered as an entirely <strong className="text-white">client-side application</strong>.
+                MathPass does not POST your passphrase to a backend. Sampling uses <code className="text-white font-mono">crypto.getRandomValues</code>.
               </p>
               <p className="text-gray-400">
-                Every calculation, random number generation, and string permutation occurs locally in your web browser&apos;s sandbox via <code className="text-white font-mono">crypto.getRandomValues</code>. No passwords, tokens, or seeds are ever transmitted across the network or saved in server logs.
+                Ads and analytics load only when their environment flags are set. The privacy claim is local generation, not a silent browser.
               </p>
             </div>
           </div>
         </div>
       </article>
 
-      {/* Bottom Ad Slot */}
       <AdBanner slot="bottom-content" format="horizontal" />
-
-      {/* FAQ Component with Schema.org markup */}
       <FAQ />
 
-      {/* Bottom Conversion CTA */}
       <section className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <div className="glass-card rounded-3xl p-8 md:p-14 border border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent-600/10 rounded-full blur-3xl pointer-events-none" />
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-white">
-            Ready for a Password You Won&apos;t Forget?
-          </h2>
+        <div className="glass-card rounded-3xl p-8 md:p-14 border border-white/10">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-white">Ready for a passphrase you can actually recall?</h2>
           <p className="text-gray-300 mb-8 max-w-lg mx-auto text-sm md:text-base">
-            Free, open-source, and client-side password engineering. Built to survive any brute-force assault.
+            Free, open-source, and generated in the browser. Strength shown in bits, not adjectives.
           </p>
           <a
             href="#generator"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base md:text-lg
-              bg-gradient-to-r from-primary-600 to-accent-600
-              hover:from-primary-500 hover:to-accent-500
-              hover:shadow-2xl hover:shadow-primary-500/30
-              transition-all duration-300 text-white"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base md:text-lg bg-primary-600 hover:bg-primary-500 text-white"
           >
-            <span>⚡ Generate Password Now</span>
-            <span>→</span>
+            Generate a passphrase →
           </a>
         </div>
       </section>

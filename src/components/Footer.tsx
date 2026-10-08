@@ -15,26 +15,40 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-gray-400 text-sm max-w-md leading-relaxed mb-4">
-              MathPass is an open-source, client-side password architecture designed by <strong className="text-white">Saurav Shriwastav</strong>. It solves the human memory paradox by fusing mathematical constants with personal anchors for zero-knowledge, uncrackable security.
+              MathPass is an open-source, client-side passphrase generator by <strong className="text-white">Saurav Shriwastav</strong>. It anchors random dictionary words on mathematical constants and shows exactly how strong each password is.
             </p>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
               <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">
-                100% Client-Side Privacy
+                Generated in the browser
               </span>
               <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">
                 Open Source · MIT License
               </span>
               <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">
-                Hardware CSPRNG
+                Web Crypto RNG
               </span>
             </div>
+            <a
+              href="https://alternativeto.net/software/mathpass/about/?utm_source=badge&utm_medium=referral"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-4"
+            >
+              <img
+                src="https://alternativeto.net/static/badges/badge-compact-color.svg"
+                alt="MathPass | AlternativeTo"
+                width={244}
+                height={79}
+                style={{ width: 244, height: 79 }}
+              />
+            </a>
           </div>
 
           <div>
             <h3 className="font-semibold mb-3 text-sm text-white">Navigation &amp; Tools</h3>
             <ul className="space-y-2 text-xs text-gray-400">
               <li><a href="#generator" className="hover:text-white transition-colors">Instant Generator</a></li>
-              <li><a href="#anti-cracker" className="hover:text-white transition-colors">Anti-Cracker Defense</a></li>
+              <li><a href="#anti-cracker" className="hover:text-white transition-colors">Security model</a></li>
               <li><a href="#constants-table" className="hover:text-white transition-colors">Constants Encyclopedia</a></li>
               <li><a href="#tester" className="hover:text-white transition-colors">Live Strength Tester</a></li>
               <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
@@ -67,7 +81,7 @@ export default function Footer() {
         <div className="border-t border-white/10 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
           <p>© {currentYear} MathPass. Created by <span className="text-gray-300 font-medium">Saurav Shriwastav</span>. Free &amp; Open Source forever under the MIT License.</p>
           <p className="font-mono text-[11px] text-gray-400">
-            Engineered with π, $e$, $\varphi$, and mathematical rigor
+            Engineered with π, e, φ, and an inspectable entropy ledger
           </p>
         </div>
       </div>

@@ -1,79 +1,134 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { typicalSample } from '@/lib/accounting';
+import { catalogUserInputs } from '@/lib/catalog';
+import { MATH_CONSTANTS } from '@/lib/constants';
 import {
   generatePassword,
-  getStrengthLabel,
   getStrategyDescription,
-  type Strategy,
+  SEPARATORS,
   type GeneratedPassword,
+  type GenerateResult,
+  type Part,
+  type Preset,
+  type Strategy,
 } from '@/lib/generator';
-import { MATH_CONSTANTS } from '@/lib/constants';
+import { labelForBits, loadGuessEstimator, secretCredit } from '@/lib/strength';
 
 interface PasswordGeneratorProps {
   initialConstantId?: string;
 }
 
-const strategies: { value: Strategy; emoji: string; label: string; tag: string }[] = [
-  { value: 'mnemonic', emoji: '🧠', label: 'Smart Mnemonic', tag: 'Dual-Layer' },
-  { value: 'punster', emoji: '😄', label: 'Punster (Funny)', tag: 'Humorous' },
-  { value: 'formula', emoji: '🧮', label: 'Math Formula', tag: 'Geek Chic' },
-  { value: 'classic', emoji: '📐', label: 'Classic Pro', tag: 'Clean' },
-  { value: 'mashup', emoji: '🔀', label: 'Constant Mashup', tag: 'Double Tough' },
-  { value: 'leetspeak', emoji: '💻', label: 'Hacker Leet', tag: '1337 Style' },
-  { value: 'random', emoji: '🎲', label: 'Surprise Me', tag: 'All Mixed' },
+const strategies: { value: Strategy; label: string; tag: string }[] = [
+  { value: 'constant', label: 'Constant', tag: 'Default' },
+  { value: 'pun', label: 'Pun', tag: 'Memorable cue' },
+  { value: 'formula', label: 'Formula', tag: 'Identity cue' },
 ];
 
+const presetLabels: { value: Preset; label: string }[] = [
+  { value: 'everyday', label: 'Everyday' },
+  { value: 'strong', label: 'Strong' },
+  { value: 'master', label: 'Master' },
+];
+
+const partClass: Record<GeneratedPassword['parts'][number]['kind'], string> = {
+  anchor: 'text-primary-300 font-bold',
+  separator: 'text-cyan-400',
+  word: 'text-gray-200',
+  secret: 'text-accent-300 font-bold',
+};
+
+function isGenerated(result: GenerateResult): result is GeneratedPassword {
+  return result.ok;
+}
+
+function groupInt(value: string): string {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function ledgerLabel(part: Part): string {
+  if (part.kind === 'word' && part.dice) return `${part.text} · dice ${part.dice}`;
+  if (part.kind === 'separator') return `separator ${part.text}`;
+  return part.text;
+}
+
 export default function PasswordGenerator({ initialConstantId }: PasswordGeneratorProps) {
-  const [length, setLength] = useState(16);
-  const [strategy, setStrategy] = useState<Strategy>('mnemonic');
-  const [count, setCount] = useState(3);
+  const [preset, setPreset] = useState<Preset>('strong');
+  const [strategy, setStrategy] = useState<Strategy>('constant');
+  const [count, setCount] = useState(1);
   const [constantId, setConstantId] = useState<string>(initialConstantId || '');
-  const [personalAnchor, setPersonalAnchor] = useState<string>('');
+  const [personalSecret, setPersonalSecret] = useState('');
+  const [showSecret, setShowSecret] = useState(false);
+  const [separator, setSeparator] = useState('');
+  const [maxLength, setMaxLength] = useState('');
   const [passwords, setPasswords] = useState<GeneratedPassword[]>([]);
+  const [failure, setFailure] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<number, boolean>>({});
+  const [secretBits, setSecretBits] = useState(0);
 
-  const handleGenerate = useCallback(() => {
-    setIsGenerating(true);
-    setCopiedIndex(null);
-
-    setTimeout(() => {
-      const results = generatePassword({
-        length,
-        strategy,
-        count,
-        constantId: constantId || undefined,
-        personalAnchor: personalAnchor.trim() || undefined,
-      });
-      setPasswords(results);
-      const vis: Record<number, boolean> = {};
-      results.forEach((_, i) => {
-        vis[i] = true;
-      });
-      setVisiblePasswords(vis);
-      setIsGenerating(false);
-    }, 120);
-  }, [length, strategy, count, constantId, personalAnchor]);
-
-  // Generate on initial mount
   useEffect(() => {
-    handleGenerate();
-  }, [handleGenerate]);
+    void loadGuessEstimator();
+  }, []);
 
-  // Update constant when parent changes
   useEffect(() => {
     if (initialConstantId) {
       setConstantId(initialConstantId);
     }
   }, [initialConstantId]);
 
+  useEffect(() => {
+    const trimmed = personalSecret.normalize('NFC').trim();
+    if (!trimmed) {
+      setSecretBits(0);
+      return;
+    }
+    try {
+      setSecretBits(secretCredit(trimmed, catalogUserInputs()));
+    } catch {
+      setSecretBits(0);
+    }
+  }, [personalSecret]);
+
+  const handleGenerate = useCallback(() => {
+    setCopiedIndex(null);
+    const max = maxLength ? Number(maxLength) : undefined;
+    const results = generatePassword({
+      preset,
+      strategy,
+      count,
+      constantId: constantId || undefined,
+      personalSecret: personalSecret.normalize('NFC').trim() || undefined,
+      separator: separator || undefined,
+      maxLength: max && Number.isFinite(max) ? max : undefined,
+    });
+    const ok = results.filter(isGenerated);
+    const failed = results.find((result) => !result.ok);
+    setPasswords(ok);
+    if (failed && !failed.ok) {
+      setFailure(
+        `This sample was ${failed.shortestLength} characters (${failed.bestBits.toFixed(1)} generated bits) and missed the ${max}-character limit. MathPass will not truncate or secretly resample a smaller keyspace. Use a higher limit or a lower preset.`,
+      );
+    } else {
+      setFailure(null);
+    }
+    const vis: Record<number, boolean> = {};
+    ok.forEach((_, i) => {
+      vis[i] = true;
+    });
+    setVisiblePasswords(vis);
+  }, [preset, strategy, count, constantId, personalSecret, separator, maxLength]);
+
+  useEffect(() => {
+    handleGenerate();
+    // Typing personal text should not reshuffle the words.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, strategy, count, constantId, separator, maxLength]);
+
   const handleCopy = useCallback(async (password: string, index: number) => {
     try {
       await navigator.clipboard.writeText(password);
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
     } catch {
       const textarea = document.createElement('textarea');
       textarea.value = password;
@@ -81,38 +136,34 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
     }
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   }, []);
 
-  const toggleVisibility = (index: number) => {
-    setVisiblePasswords((prev) => ({ ...prev, [index]: !prev[index] }));
-  };
+  const secretHasSpaces = personalSecret.includes(' ');
+  const secretHasNonAscii = /[^\x20-\x7E]/.test(personalSecret);
+  const presetStats = presetLabels.map((item) => ({
+    ...item,
+    sample: typicalSample({
+      strategy,
+      preset: item.value,
+      pinnedId: constantId || undefined,
+      separatorPinned: Boolean(separator),
+    }),
+  }));
 
   return (
     <section id="generator" className="max-w-4xl mx-auto px-4 py-6 scroll-mt-20">
-      {/* Controls Card */}
-      <div className="glass-card rounded-3xl p-6 md:p-8 mb-8 border border-white/10 shadow-2xl relative overflow-hidden">
-        {/* Glow backdrop */}
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-accent-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Header inside generator */}
+      <div className="glass-card rounded-3xl p-6 md:p-8 mb-8 border border-white/10 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-white/10">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              <span>⚡</span>
-              <span>Instant Generator</span>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-300 font-mono">
-                CSPRNG Active
-              </span>
-            </h2>
+            <h2 className="text-xl md:text-2xl font-bold">Passphrase generator</h2>
             <p className="text-xs text-gray-400 mt-1">
-              Protected by hardware-grade randomness (<code className="text-primary-300">crypto.getRandomValues</code>) &amp; cognitive anchors.
+              Bits are <code className="text-primary-300">log2</code> of this generator&apos;s choices, assuming the source is public.
+              Randomness from <code className="text-primary-300">crypto.getRandomValues</code>.
             </p>
           </div>
-
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-400 font-medium">Constant:</label>
             <select
@@ -120,7 +171,9 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
               onChange={(e) => setConstantId(e.target.value)}
               className="bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-primary-500"
             >
-              <option value="" className="bg-gray-900 text-white">Any Constant (Random)</option>
+              <option value="" className="bg-gray-900 text-white">
+                Any constant (random)
+              </option>
               {MATH_CONSTANTS.map((c) => (
                 <option key={c.id} value={c.id} className="bg-gray-900 text-white">
                   {c.symbol} {c.name}
@@ -130,65 +183,71 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
           </div>
         </div>
 
-        {/* Personal Anchor / Custom Salt Field (Anti-Cracker Feature) */}
-        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-primary-950/30 to-accent-950/30 border border-primary-500/20">
+        <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-            <label className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-              <span>🛡️</span>
-              <span>Personal Secret Anchor (Optional Salt)</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-500/20 text-primary-300 font-mono">
-                Anti-Cracker Shield
-              </span>
-            </label>
+            <label className="text-xs sm:text-sm font-bold text-white">Personal text (optional)</label>
             <span className="text-[11px] text-gray-400">
-              {personalAnchor ? '✓ Dual-Layer Active' : 'Defeats targeted attacks'}
+              {personalSecret.trim()
+                ? `Estimated +${secretBits.toFixed(1)} bits, not included above`
+                : 'Counted separately, and only if it is hard to guess'}
             </span>
           </div>
           <div className="relative">
             <input
-              type="text"
-              placeholder="e.g. coffee, pet name, childhood street (adds private unguessable salt)..."
-              value={personalAnchor}
-              onChange={(e) => setPersonalAnchor(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              type={showSecret ? 'text' : 'password'}
+              placeholder="Optional extra text appended exactly as typed"
+              value={personalSecret}
+              onChange={(e) => setPersonalSecret(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+              autoCapitalize="off"
+              className="w-full px-4 py-2.5 pr-24 rounded-xl bg-black/40 border border-white/15 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
             />
-            {personalAnchor && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
               <button
                 type="button"
-                onClick={() => setPersonalAnchor('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded bg-white/10"
+                onClick={() => setShowSecret((v) => !v)}
+                className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded bg-white/10"
               >
-                Clear
+                {showSecret ? 'Hide' : 'Show'}
               </button>
-            )}
+              {personalSecret && (
+                <button
+                  type="button"
+                  onClick={() => setPersonalSecret('')}
+                  className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded bg-white/10"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
           <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
-            💡 <strong>Why this makes you uncrackable:</strong> Even if a hacker knows you used MathPass, they can never guess your private anchor word. MathPass infuses your secret with the constant to shatter all template-cracking dictionaries.
+            Pet names and foods are in cracking dictionaries. Every password made with this text shares it: if one leaks, it stops helping the others. The generated words stay strong on their own.
           </p>
+          {(secretHasSpaces || secretHasNonAscii) && (
+            <p className="text-[11px] text-amber-300 mt-2">
+              Spaces and non-ASCII characters are kept exactly. Some sites reject them.
+            </p>
+          )}
         </div>
 
-        {/* Strategy Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-200 mb-2.5">
-            Password Style &amp; Memory Type
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+          <label className="block text-sm font-semibold text-gray-200 mb-2.5">Anchor style</label>
+          <div className="grid grid-cols-3 gap-2">
             {strategies.map((s) => (
               <button
                 key={s.value}
                 type="button"
                 onClick={() => setStrategy(s.value)}
-                className={`p-2.5 rounded-xl text-left transition-all duration-200 flex flex-col justify-between ${
+                className={`p-2.5 rounded-xl text-left transition-all duration-200 ${
                   strategy === s.value
-                    ? 'bg-primary-600/30 border-primary-500/60 border text-white shadow-lg shadow-primary-500/20 ring-1 ring-primary-500/50'
+                    ? 'bg-primary-600/30 border-primary-500/60 border text-white'
                     : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-base">{s.emoji}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300 font-mono">
-                    {s.tag}
-                  </span>
+                <div className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300 font-mono w-fit mb-1">
+                  {s.tag}
                 </div>
                 <span className="text-xs font-semibold leading-tight">{s.label}</span>
               </button>
@@ -199,67 +258,36 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
           </p>
         </div>
 
-        {/* Quick Length & Count Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Length */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-200">
-                Password Length
-              </label>
-              <span className="text-xl font-bold gradient-text font-mono">
-                {length} chars
-              </span>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              {[
-                { val: 12, label: '12 (Fast)' },
-                { val: 16, label: '16 (Recommended)' },
-                { val: 20, label: '20 (Strong)' },
-                { val: 24, label: '24 (Fortress)' },
-              ].map((btn) => (
+            <label className="block text-sm font-semibold text-gray-200 mb-2">Strength</label>
+            <div className="flex gap-2">
+              {presetStats.map((item) => (
                 <button
-                  key={btn.val}
+                  key={item.value}
                   type="button"
-                  onClick={() => setLength(btn.val)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    length === btn.val
-                      ? 'bg-primary-500/30 border border-primary-500/50 text-white font-bold'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                  onClick={() => setPreset(item.value)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    preset === item.value
+                      ? 'bg-primary-600/40 border-primary-500/60 border text-white'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  {btn.val}
+                  <div>{item.label}</div>
+                  <div className="text-[10px] font-normal text-gray-400">
+                    {item.sample.bits.toFixed(1)} bits · {item.sample.words} words
+                  </div>
                 </button>
               ))}
             </div>
-
-            <input
-              type="range"
-              min="8"
-              max="32"
-              value={length}
-              onChange={(e) => setLength(parseInt(e.target.value))}
-              className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer
-                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
-                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500
-                [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary-500/50
-                [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform
-                [&::-webkit-slider-thumb]:hover:scale-125"
-            />
-            <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-              <span>8 chars (Min)</span>
-              <span>16 (Enterprise)</span>
-              <span>32 chars (Max)</span>
-            </div>
+            <p className="text-[11px] text-gray-500 mt-2">
+              Word count is chosen so this configuration meets the preset floor. Pinning a constant removes its bits and may add a word.
+            </p>
           </div>
 
-          {/* Count */}
           <div>
-            <label className="block text-sm font-semibold text-gray-200 mb-2">
-              How many passwords?
-            </label>
-            <div className="flex gap-2 mb-4">
+            <label className="block text-sm font-semibold text-gray-200 mb-2">How many passwords?</label>
+            <div className="flex gap-2 mb-3">
               {[1, 3, 5, 10].map((n) => (
                 <button
                   key={n}
@@ -267,226 +295,206 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
                   onClick={() => setCount(n)}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
                     count === n
-                      ? 'bg-primary-600/40 border-primary-500/60 border text-white shadow-md'
+                      ? 'bg-primary-600/40 border-primary-500/60 border text-white'
                       : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  {n} {n === 1 ? 'password' : 'passwords'}
+                  {n}
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-gray-400">
-              💡 Generate multiple variations in one click to pick the most memorable story for your accounts.
-            </p>
+            {count > 1 && (
+              <p className="text-[11px] text-amber-200/80">
+                Generating {count} and picking one favorite reduces the search space by about {Math.log2(count).toFixed(1)} bits. Use each sample on a different account, or generate one.
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Generate Button */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Separator</label>
+            <select
+              value={separator}
+              onChange={(e) => setSeparator(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-primary-500"
+            >
+              <option value="" className="bg-gray-900">
+                Random ({SEPARATORS.length} choices, {Math.log2(SEPARATORS.length).toFixed(0)} bits)
+              </option>
+              {SEPARATORS.map((item) => (
+                <option key={item} value={item} className="bg-gray-900">
+                  {item} (chosen, 0 bits)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Site max length (optional)</label>
+            <input
+              type="number"
+              min={8}
+              placeholder="Leave empty: never truncate"
+              value={maxLength}
+              onChange={(e) => setMaxLength(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/15 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+            />
+          </div>
+        </div>
+
         <button
           onClick={handleGenerate}
-          disabled={isGenerating}
-          className="w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300
-            bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500
-            hover:from-primary-500 hover:to-accent-400
-            hover:shadow-2xl hover:shadow-primary-500/30
-            active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed
-            flex items-center justify-center gap-3 text-white"
+          className="w-full py-4 rounded-2xl font-bold text-lg bg-primary-600 hover:bg-primary-500 text-white"
         >
-          {isGenerating ? (
-            <>
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Generating via CSPRNG...
-            </>
-          ) : (
-            <>
-              <span>🎲</span>
-              <span>Generate {count} Mathematical Passwords</span>
-            </>
-          )}
+          Generate {count} passphrase{count === 1 ? '' : 's'}
         </button>
+        {failure && <p className="text-xs text-amber-300 mt-3">{failure}</p>}
       </div>
 
-      {/* Results List */}
       {passwords.length > 0 && (
-        <div className="space-y-5 animate-fade-in">
+        <div className="space-y-5">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <span>🔐</span>
-              <span>Your Fortified Passwords</span>
-              <span className="text-xs font-normal text-gray-400">({passwords.length} generated)</span>
-            </h3>
+            <h3 className="text-lg font-bold text-white">Generated passphrases</h3>
             <button
               onClick={handleGenerate}
-              className="text-xs text-primary-400 hover:text-primary-300 font-semibold flex items-center gap-1 transition-colors"
+              className="text-xs text-primary-400 hover:text-primary-300 font-semibold"
             >
-              <span>🔄</span>
-              <span>Regenerate All</span>
+              Generate again
             </button>
           </div>
 
           {passwords.map((pw, index) => {
-            const { label: strengthLabel, color: strengthColor, bg: strengthBg } = getStrengthLabel(pw.strength);
+            const style = labelForBits(pw.generatedBits);
             const isVisible = visiblePasswords[index] !== false;
+            const meter = Math.min(100, (pw.generatedBits / 80) * 100);
 
             return (
               <div
-                key={index}
-                className={`glass-card rounded-2xl p-5 md:p-6 transition-all duration-300 hover:border-white/20 border border-white/10 ${
-                  copiedIndex === index ? 'copy-flash ring-2 ring-green-500/60 bg-green-950/20' : ''
+                key={`${pw.password}-${index}`}
+                className={`glass-card rounded-2xl p-5 md:p-6 border border-white/10 ${
+                  copiedIndex === index ? 'ring-2 ring-green-500/60' : ''
                 }`}
               >
-                {/* Top Bar: Password String & Controls */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 bg-black/40 p-4 rounded-xl border border-white/5">
-                  <div className="flex-1 min-w-0">
-                    <div className="password-display text-lg md:text-2xl font-bold tracking-wide break-all font-mono select-all">
-                      {isVisible ? (
-                        pw.password.split('').map((char, i) => {
-                          let colorClass = 'text-white';
-                          if (/[0-9]/.test(char)) colorClass = 'text-amber-400 font-bold';
-                          else if (/[!@#$%&*?+=]/.test(char)) colorClass = 'text-cyan-400 font-black';
-                          else if (/[A-Z]/.test(char)) colorClass = 'text-primary-300 font-bold';
-                          else colorClass = 'text-gray-200';
-
-                          return (
-                            <span key={i} className={colorClass}>
-                              {char}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-gray-500 tracking-widest font-mono">
-                          {'•'.repeat(pw.password.length)}
+                  <div className="password-display text-lg md:text-xl font-bold tracking-wide break-all font-mono select-all">
+                    {isVisible ? (
+                      pw.parts.map((part, partIndex) => (
+                        <span key={`${part.kind}-${partIndex}`} className={partClass[part.kind]}>
+                          {part.text}
                         </span>
-                      )}
-                    </div>
+                      ))
+                    ) : (
+                      <span className="text-gray-500 tracking-widest">{'•'.repeat(pw.password.length)}</span>
+                    )}
                   </div>
-
-                  {/* Actions: Copy & Hide/Show */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() => toggleVisibility(index)}
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-xs border border-white/10 transition-colors"
-                      title={isVisible ? 'Hide password' : 'Show password'}
+                      onClick={() => setVisiblePasswords((prev) => ({ ...prev, [index]: !isVisible }))}
+                      className="p-2 rounded-lg bg-white/5 text-gray-400 text-xs border border-white/10"
                     >
-                      {isVisible ? '👁️ Hide' : '🙈 Show'}
+                      {isVisible ? 'Hide' : 'Show'}
                     </button>
-
                     <button
                       type="button"
                       onClick={() => handleCopy(pw.password, index)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        copiedIndex === index
-                          ? 'bg-green-500/30 text-green-300 border border-green-500/50 shadow-lg shadow-green-500/20'
-                          : 'bg-primary-600 hover:bg-primary-500 text-white shadow-md shadow-primary-600/30'
+                      className={`px-4 py-2 rounded-xl text-xs font-bold ${
+                        copiedIndex === index ? 'bg-green-500/30 text-green-300' : 'bg-primary-600 text-white'
                       }`}
                     >
-                      {copiedIndex === index ? (
-                        <>
-                          <span>✓</span>
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>📋</span>
-                          <span>Copy Password</span>
-                        </>
-                      )}
+                      {copiedIndex === index ? 'Copied' : 'Copy'}
                     </button>
                   </div>
                 </div>
 
-                {/* Strength Meter & Crack Time */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-xs">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-gray-400 font-medium">Security Strength</span>
-                      <span
-                        className="font-bold px-2 py-0.5 rounded-full"
-                        style={{ color: strengthColor, backgroundColor: strengthBg }}
-                      >
-                        {strengthLabel} ({pw.strength}%)
+                      <span className="text-gray-400 font-medium">Generated keyspace</span>
+                      <span className="font-bold px-2 py-0.5 rounded-full" style={{ color: style.color, backgroundColor: style.bg }}>
+                        {style.label} · {pw.generatedBits.toFixed(1)} bits
                       </span>
                     </div>
                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="strength-bar h-full rounded-full"
-                        style={{
-                          width: `${pw.strength}%`,
-                          backgroundColor: strengthColor,
-                        }}
-                      />
+                      <div className="h-full rounded-full" style={{ width: `${meter}%`, backgroundColor: style.color }} />
                     </div>
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-gray-400 font-medium">Brute Force Crack Resistance</span>
-                      <span className="font-semibold text-primary-300">
-                        {pw.entropy} bits entropy
-                      </span>
-                    </div>
-                    <div className="font-mono text-gray-300 font-medium">
-                      🛡️ {pw.crackTime}
-                    </div>
+                  <div className="text-gray-300">
+                    <div>Fast hash (~10^12/s): {pw.crackTimeFast}</div>
+                    <div>Slow hash (~10^5/s): {pw.crackTimeSlow}</div>
+                    {pw.secretBits > 0 && (
+                      <div className="text-accent-300 mt-1">
+                        Personal text estimated +{pw.secretBits.toFixed(1)} bits, not included above
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Requirements Checklist Badges */}
                 <div className="flex flex-wrap gap-2 mb-4 text-[11px]">
-                  <span className={`px-2 py-1 rounded-md border ${pw.checklist.hasUpper ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                    {pw.checklist.hasUpper ? '✓' : '✗'} Uppercase (A-Z)
+                  <span className="px-2 py-1 rounded-md border bg-white/5 text-gray-300 border-white/10">
+                    {pw.password.length} characters
                   </span>
-                  <span className={`px-2 py-1 rounded-md border ${pw.checklist.hasLower ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                    {pw.checklist.hasLower ? '✓' : '✗'} Lowercase (a-z)
+                  <span className="px-2 py-1 rounded-md border bg-white/5 text-gray-300 border-white/10">
+                    {pw.wordCount} random words
                   </span>
-                  <span className={`px-2 py-1 rounded-md border ${pw.checklist.hasDigit ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                    {pw.checklist.hasDigit ? '✓' : '✗'} Numbers (0-9)
-                  </span>
-                  <span className={`px-2 py-1 rounded-md border ${pw.checklist.hasSpecial ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                    {pw.checklist.hasSpecial ? '✓' : '✗'} Symbols (!@#$)
-                  </span>
-                  <span className={`px-2 py-1 rounded-md border ${pw.checklist.isLongEnough ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
-                    {pw.checklist.isLongEnough ? '✓' : '!'} Length {pw.password.length} chars
-                  </span>
-                  {pw.checklist.hasPersonalAnchor && (
-                    <span className="px-2 py-1 rounded-md border bg-accent-500/15 text-accent-300 border-accent-500/30 font-bold">
-                      ⭐ Dual-Layer Secret Infused
+                  {pw.checklist.hasPersonalSecret && (
+                    <span className="px-2 py-1 rounded-md border bg-accent-500/15 text-accent-300 border-accent-500/30">
+                      Personal text appended exactly
                     </span>
                   )}
                 </div>
 
-                {/* Mnemonic Story Box (How to remember it!) */}
-                <div className="p-3.5 rounded-xl bg-gradient-to-r from-primary-950/40 to-accent-950/40 border border-primary-500/20 mb-3">
-                  <div className="flex items-start gap-2.5">
-                    <span className="text-base flex-shrink-0">🧠</span>
-                    <div>
-                      <div className="text-xs font-bold text-primary-300 uppercase tracking-wide mb-0.5">
-                        How to Remember It
-                      </div>
-                      <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                        {pw.mnemonic}
-                      </p>
-                    </div>
+                <details className="p-3.5 rounded-xl bg-white/5 border border-white/10 mb-3">
+                  <summary className="text-xs font-bold text-primary-300 uppercase tracking-wide cursor-pointer">
+                    Entropy ledger · sample #{groupInt(pw.rank)} of {groupInt(pw.keyspace)}
+                  </summary>
+                  <p className="text-[11px] text-gray-400 mt-2 mb-3">
+                    Rank is the mixed-radix index of this string in the generator&apos;s equally likely outputs. Bits are log2 of each term&apos;s choices.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] text-left">
+                      <thead className="text-gray-500">
+                        <tr>
+                          <th className="py-1 pr-2 font-medium">Part</th>
+                          <th className="py-1 pr-2 font-medium">Choices</th>
+                          <th className="py-1 pr-2 font-medium">Index</th>
+                          <th className="py-1 pr-2 font-medium">Bits</th>
+                          <th className="py-1 font-medium">Running</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-gray-300 font-mono">
+                        {pw.parts.reduce<Array<Part & { running: number }>>((rows, part) => {
+                          const prev = rows[rows.length - 1]?.running ?? 0;
+                          rows.push({ ...part, running: prev + part.bits });
+                          return rows;
+                        }, []).map((row, rowIndex) => (
+                          <tr key={`${row.kind}-${rowIndex}`} className="border-t border-white/5">
+                            <td className="py-1 pr-2 break-all">{ledgerLabel(row)}</td>
+                            <td className="py-1 pr-2">{row.choices}</td>
+                            <td className="py-1 pr-2">{row.index}</td>
+                            <td className="py-1 pr-2">{row.bits.toFixed(2)}</td>
+                            <td className="py-1">{row.running.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                </details>
+
+                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 mb-3">
+                  <div className="text-xs font-bold text-primary-300 uppercase tracking-wide mb-0.5">How to remember it</div>
+                  <p className="text-xs text-gray-300 font-medium leading-relaxed">{pw.mnemonic}</p>
                 </div>
 
-                {/* Constant Backstory & Math Info */}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] uppercase tracking-wider text-gray-500">Based On:</span>
-                    {pw.constants.map((c, ci) => (
-                      <span key={ci} className="constant-tag px-2 py-0.5 rounded text-white font-mono text-[11px]">
-                        {c.symbol} {c.name} ({c.year})
+                    {pw.constants.map((c) => (
+                      <span key={c.id} className="constant-tag px-2 py-0.5 rounded text-white font-mono text-[11px]">
+                        {c.symbol} {c.name}
                       </span>
                     ))}
                   </div>
-                  <div className="text-[11px] text-gray-500">
-                    💡 {pw.explanation}
-                  </div>
+                  <div className="text-[11px] text-gray-500">{pw.explanation}</div>
                 </div>
               </div>
             );

@@ -20,7 +20,7 @@ export default function Header() {
               </span>
             </div>
             <div className="text-[11px] text-gray-400 -mt-0.5 hidden sm:block">
-              Constant-Powered Security
+              Passphrases from constants
             </div>
           </div>
         </a>
@@ -84,7 +84,7 @@ export default function Header() {
             onClick={() => setMobileMenuOpen(false)}
             className="p-2 rounded-lg hover:bg-white/5 text-accent-400"
           >
-            🛡️ Anti-Cracker Defense
+            Security model
           </a>
           <a
             href="#constants-table"

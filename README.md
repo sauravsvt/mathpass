@@ -1,54 +1,65 @@
 # MathPass
 
-A client-side password generator that transforms mathematical and physical constants into high-entropy, memorable passwords.
+A client-side passphrase generator that builds memorable passwords from a public mathematical cue plus uniformly random dictionary words, and shows exactly how many bits of entropy each one has.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
-[![Security: CSPRNG](https://img.shields.io/badge/Security-CSPRNG%20Hardware-green.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
+[![Security: CSPRNG](https://img.shields.io/badge/Security-CSPRNG%20Web%20Crypto-green.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
+
+<a href="https://alternativeto.net/software/mathpass/about/?utm_source=badge&utm_medium=referral" target="_blank">
+  <img src="https://alternativeto.net/static/badges/badge-compact-color.svg"
+       alt="MathPass | AlternativeTo"
+       width="244" height="79"
+       style="width: 244px; height: 79px;" />
+</a>
 
 ---
 
 ## Motivation
 
-Standard password generators create strings like `k9#mP$2vL!xQ`. While cryptographically strong, they suffer from rapid human memory decay. Users either write them down on insecure notes or default back to predictable variations like `Password2024!`.
+Standard password generators create strings like `k9#mP$2vL!xQ`. They are dense and easy to forget. Template generators that only shuffle a few puns and digit slices are easy to remember and also easy to enumerate once the source is public.
 
-MathPass explores a different approach: **cognitive memory anchoring**. Most people already have long-term mental pathways for famous constants ($\pi$, $e$, $\varphi$, Planck's $h$, or the speed of light $c$). By combining these constants with mnemonic structures and an optional personal secret (private salt), MathPass creates passwords that achieve 80–120+ bits of Shannon entropy while remaining effortless to recall.
+MathPass keeps a constant you already know (π, e, φ, Planck's h, the speed of light c) as a **memory cue**, then adds words drawn uniformly from the official [EFF long wordlist](https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases) (CC BY 3.0). The list has 7,776 words = 6^5, so each word is five dice and contributes log2(7776) ≈ 12.92 bits. The string on screen is the string you remember.
 
 ---
 
-## Security Architecture
+## Security model
 
-### The Anti-Template Dilemma (Kerckhoffs's Principle)
+The attacker is assumed to have this source. The words are the secret.
 
-A common flaw in template-based generators is that an attacker who knows the generator's template pool can construct a targeted dictionary attack. A naive template generator with 30,000 combinations can be exhausted in milliseconds on a modern GPU.
+Generated strength is:
 
-MathPass addresses this via a **Dual-Layer Architecture**:
+```text
+H = log2(|anchors|) + log2(|separators|) + wordCount * log2(7776)
+```
 
-1. **Layer 1: Cognitive Memory Anchor (The Constant)**  
-   The mathematical or physical constant provides a memorable foundation for the user.
-2. **Layer 2: Private Secret Salt (Personal Anchor)**  
-   Users can supply an optional private secret keyword (e.g. a childhood pet or favorite food). This injects unguessable entropy that no dictionary can predict.
-3. **Layer 3: Hardware-Backed CSPRNG**  
-   All digit slice offsets, delimiters, and case permutations are drawn using the browser's native `crypto.getRandomValues` Web Crypto API, eliminating pseudo-random predictability.
+Cues are magnitude-correct (`Gamma0.57722` for γ ≈ 0.577, never a shifted decimal). Famous digits and the constant itself are public, so they add 0 bits when the constant is pinned. A user-chosen separator adds 0 bits. Optional personal text is appended exactly as typed and is **estimated separately**, capped at 32 bits, and never included in the headline number.
 
-$$\text{Search Space with Personal Anchor} > 2^{80} \text{ to } 2^{120} \text{ combinations}$$
+Each sample also has a mixed-radix rank: it is output #r of the keyspace, which you can unrank. Site length limits fail instead of silently resampling a smaller set.
+
+| Preset   | Target | Typical (random constant, random separator) |
+|----------|--------|-----------------------------------------------|
+| Everyday | ≥ 60 bits | 4 words, about 60.2 bits |
+| Strong (default) | ≥ 72 bits | 5 words, about 73.1 bits |
+| Master   | ≥ 80 bits | 6 words, about 86.0 bits |
+
+Randomness comes from `crypto.getRandomValues` with rejection sampling. If Web Crypto is missing, generation throws. There is no non-cryptographic fallback.
+
+Crack-time labels state two rates: about 10^12 guesses/s for a fast hash, and about 10^5/s for a slow hash. Actual time depends on the site.
 
 ---
 
 ## Features
 
-- **40+ Mathematical & Physical Constants**: Includes $\pi$, Euler's $e$, Golden Ratio $\varphi$, Pythagoras $\sqrt{2}$, $\tau$, Apéry's constant, Ramanujan's constant, Planck's constant $h$, Speed of Light $c$, Boltzmann's $k_B$, Avogadro's $N_A$, and more.
-- **6 Password Strategies**:
-  - **Smart Mnemonic**: Constant + cognitive word + personal secret anchor.
-  - **Punster**: Humorous mathematical puns with decimal digits (`CutiePi@3.1415!`).
-  - **Math Formula**: Famous physical and mathematical identities ($E = mc^2$, $e^{i\pi}+1=0$, $PV=nRT$).
-  - **Classic Pro**: Clean constant name + randomized decimal sequences.
-  - **Mashup**: Two distinct constants mathematically combined.
-  - **Hacker Leet**: Math concepts transformed into 1337-speak.
-- **Zero-Knowledge Privacy**: 100% client-side execution. No passwords, seeds, or parameters are transmitted across the network.
-- **Live Password Auditor**: Real-time entropy and brute-force resistance calculator.
-- **Searchable Constants Library**: Interactive reference table with one-click generation.
+- **44 mathematical and physical constants** as public ASCII cues (`Pi3.1416`, `Light299792458`, `Gamma0.57722`).
+- **3 cue styles**: Constant, Pun, and Formula. Formula magnitudes join with a colon (`PV=nRT:8.3145`) so the identity is not a false equation.
+- **Entropy ledger** with per-term choices, dice codes, running bits, and mixed-radix rank.
+- **Decoder** in the tester: a MathPass passphrase shows exact generated bits, not a zxcvbn guess.
+- **Generated in the browser**. MathPass does not send the password to a MathPass server.
+- **Searchable constants library** with one-click generation.
+
+Wordlist: Electronic Frontier Foundation long list, 7,776 tokens including the four hyphenated entries, SHA-256 pinned in `src/lib/wordlist.ts`. [CC BY 3.0](https://www.eff.org/copyright).
 
 ---
 
@@ -64,6 +75,9 @@ npm install
 
 # Run development server
 npm run dev
+
+# Run tests
+npm test
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.

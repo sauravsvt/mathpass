@@ -1,38 +1,27 @@
 import type { Metadata } from 'next';
-import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mathpass.voxonlabs.com';
 
+const description =
+  'Memorable passphrases anchored on π, e, φ, Planck’s h and 40+ constants, with exact, verifiable entropy. Generated in your browser and open source.';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'MathPass — Memorable Passwords from Mathematical & Physical Constants',
+    default: 'MathPass — Memorable Passphrases from Mathematical Constants',
     template: '%s | MathPass',
   },
-  description:
-    'Generate unbreakable, memorable passwords using π, e, φ, Planck’s h, Speed of Light c, and 40+ mathematical & physical constants. Zero-knowledge, hardware CSPRNG, and dual-layer security.',
+  description,
   keywords: [
     'password generator',
+    'passphrase generator',
     'mathematical constants',
-    'planck constant password',
-    'physics constant password generator',
-    'speed of light password',
     'memorable password generator',
-    'strong password generator',
-    'pi password generator',
-    'euler number password',
-    'golden ratio password',
-    'math password generator',
-    'secure memorable password',
-    'password entropy calculator',
-    'quantum physics password',
-    'math puns password',
-    'pythagoras password',
-    'easy to remember strong passwords',
-    'password strength checker',
-    'free password generator online',
+    'diceware',
+    'eff wordlist',
     'client side password generator',
+    'password entropy',
     'voxonlabs',
   ],
   authors: [{ name: 'Saurav Shriwastav', url: 'https://github.com/sauravsvt' }],
@@ -54,23 +43,21 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'MathPass · Voxon Labs',
-    title: 'MathPass — Memorable Passwords from Mathematical & Physical Constants',
-    description:
-      'Generate unbreakable, memorable passwords using π, e, φ, Planck’s h, and 40+ constants. Client-side, hardware CSPRNG, and dual-layer defense.',
+    title: 'MathPass — Memorable Passphrases from Mathematical Constants',
+    description,
     images: [
       {
         url: '/favicon.svg',
         width: 1200,
         height: 630,
-        alt: 'MathPass - Constant Powered Password Generator',
+        alt: 'MathPass passphrase generator',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MathPass — Memorable Passwords from Constants',
-    description:
-      'Generate strong passwords using π, e, φ, Planck’s h, and 40+ constants. Dual-layer security.',
+    title: 'MathPass — Memorable Passphrases from Constants',
+    description,
     images: ['/favicon.svg'],
   },
   alternates: {
@@ -94,7 +81,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
-        {/* Google Analytics 4 (activates when NEXT_PUBLIC_GA_ID is provided) */}
         {gaId && (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
@@ -111,16 +97,14 @@ export default function RootLayout({
           </>
         )}
 
-        {/* Google AdSense Script (activates when NEXT_PUBLIC_ADSENSE_ID is provided) */}
         {adsenseId && (
           <script
             async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
+            src={`https://pagead2.googlesyndication.com/adsbygoogle.js?client=${adsenseId}`}
             crossOrigin="anonymous"
           />
         )}
 
-        {/* Structured Data: WebApplication & HowTo */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -132,8 +116,7 @@ export default function RootLayout({
                   '@id': `${siteUrl}/#app`,
                   name: 'MathPass',
                   url: siteUrl,
-                  description:
-                    'Generate strong, memorable passwords using mathematical and physical constants like π, e, φ, Planck’s h, and more.',
+                  description,
                   applicationCategory: 'SecurityApplication',
                   operatingSystem: 'Any',
                   browserRequirements: 'Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.',
@@ -143,34 +126,34 @@ export default function RootLayout({
                     priceCurrency: 'USD',
                   },
                   featureList: [
-                    'Password generation using 40+ mathematical and physical constants',
-                    '6 cognitive strategies including Smart Mnemonic and Math Puns',
-                    'Client-side generation with zero server data storage',
-                    'Interactive password strength and entropy tester',
-                    'Comprehensive constants encyclopedia',
-                    'One-click clipboard copying',
+                    'Passphrases anchored on 44 mathematical and physical constants',
+                    'Three public-cue styles: Constant, Pun, and Formula',
+                    'Generated keyspace shown as log2 of the actual choices',
+                    'EFF long wordlist with Web Crypto sampling',
+                    'Typed-password guess estimate',
+                    'Constants encyclopedia',
                   ],
                 },
                 {
                   '@type': 'HowTo',
-                  name: 'How to Generate a Memorable Strong Password with Mathematical Constants',
+                  name: 'How to generate a memorable passphrase with mathematical constants',
                   description:
-                    'A step-by-step guide to generating secure passwords that are easy to remember using constants.',
+                    'Build a passphrase from a public constant cue plus uniformly random dictionary words.',
                   step: [
                     {
                       '@type': 'HowToStep',
-                      name: 'Select a Password Style',
-                      text: 'Choose between Smart Mnemonic, Punster (Math Puns), Formula, Classic, Mashup, or Leetspeak.',
+                      name: 'Select a cue style',
+                      text: 'Choose Constant, Pun, or Formula. The cue is public; the words are the secret.',
                     },
                     {
                       '@type': 'HowToStep',
-                      name: 'Specify Length and Count',
-                      text: 'Pick your preferred length (12 to 32 characters) and number of passwords to generate.',
+                      name: 'Pick a strength preset',
+                      text: 'Everyday, Strong, or Master. MathPass chooses the word count so the displayed bits meet the floor for the current settings.',
                     },
                     {
                       '@type': 'HowToStep',
-                      name: 'Generate and Copy',
-                      text: 'Click Generate to produce fortified passwords with their memory story and copy with one click.',
+                      name: 'Generate and copy',
+                      text: 'Copy the exact string shown. The recall line matches the password character for character.',
                     },
                   ],
                 },
@@ -179,11 +162,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased min-h-screen">
-        {children}
-        {/* Real-time Vercel Web Analytics */}
-        <Analytics />
-      </body>
+      <body className="antialiased min-h-screen">{children}</body>
     </html>
   );
 }

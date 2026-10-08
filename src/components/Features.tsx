@@ -1,43 +1,45 @@
+import { ACCOUNTING, DEFAULT_CONSTANT } from '@/lib/accounting';
+
 const features = [
   {
-    icon: '🧠',
-    title: 'Memorable by Design',
-    description: 'Passwords built on math constants you already know. Pi, Euler, Golden Ratio — your memory anchors.',
+    icon: '1',
+    title: 'Memorable by design',
+    description: 'A constant you already know, then random dictionary words. The string on screen is the string you remember.',
   },
   {
-    icon: '🔒',
-    title: 'Cryptographically Strong',
-    description: 'Every password meets enterprise-grade requirements: uppercase, lowercase, numbers, special characters, 50-100+ bits of entropy.',
+    icon: '2',
+    title: 'Bits you can recompute',
+    description: `A random-constant sample is ${DEFAULT_CONSTANT.everyday.bits.toFixed(1)} / ${DEFAULT_CONSTANT.strong.bits.toFixed(1)} / ${DEFAULT_CONSTANT.master.bits.toFixed(1)} bits for Everyday / Strong / Master. The badge is log2 of this sample's choices, not a slogan.`,
   },
   {
-    icon: '🎭',
-    title: '5 Creative Strategies',
-    description: 'Classic, Punster, Formula, Mashup, or Leetspeak — pick your style or let us surprise you.',
+    icon: '3',
+    title: 'Three public-cue styles',
+    description: 'Constant, Pun, or Formula. The cue is public. Strength comes from uniformly chosen words.',
   },
   {
-    icon: '🔑',
-    title: '100% Client-Side',
-    description: 'Zero server calls. Your passwords are generated in your browser and never leave your device.',
+    icon: '4',
+    title: 'Runs in the browser',
+    description: 'Passwords are generated locally. MathPass does not send them to a MathPass server.',
   },
   {
-    icon: '📱',
-    title: 'Works Everywhere',
-    description: 'Responsive design that works on desktop, tablet, and mobile. No app install needed.',
+    icon: '5',
+    title: 'Dice-checkable words',
+    description: `The EFF long list has ${ACCOUNTING.wordlistSize.toLocaleString()} words = 6^5. Each word in the ledger shows its five-die code.`,
   },
   {
-    icon: '⚡',
-    title: 'Instant Generation',
-    description: 'Generate up to 5 passwords at once. Copy with one click. No loading, no waiting.',
+    icon: '6',
+    title: 'Batch generation',
+    description: 'Generate up to 10 at once. Copy with one click. Picking one favorite of N costs log2(N) bits.',
   },
   {
-    icon: '🎓',
-    title: 'Learn While You Lock',
-    description: 'Each password comes with a fun fact about the mathematical constant used.',
+    icon: '7',
+    title: 'The constant is a cue',
+    description: 'Each result names the constant and shows a magnitude-correct ASCII cue, so Euler-Mascheroni is Gamma0.57722, never a shifted decimal.',
   },
   {
-    icon: '♾️',
-    title: 'Unlimited & Free',
-    description: 'No accounts, no limits, no cost. Generate as many passwords as you want, forever.',
+    icon: '8',
+    title: 'Free to use',
+    description: 'No accounts and no generation limit. Optional ads stay off unless enabled in the environment.',
   },
 ];
 
@@ -48,19 +50,13 @@ export default function Features() {
         Why <span className="gradient-text">MathPass</span>?
       </h2>
       <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
-        Traditional passwords are either strong and forgettable, or memorable and weak.
-        MathPass gives you both — powered by the most beautiful numbers in mathematics.
+        Random symbol soup is hard to remember. Short math templates are easy to search. MathPass keeps the cue and puts the entropy in the words.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {features.map((feature, index) => (
-          <div
-            key={index}
-            className="glass-card rounded-xl p-6 hover:bg-white/10 transition-all duration-300 group"
-          >
-            <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">
-              {feature.icon}
-            </div>
+        {features.map((feature) => (
+          <div key={feature.title} className="glass-card rounded-xl p-6 hover:bg-white/10">
+            <div className="text-xs font-mono text-primary-300 mb-4">{feature.icon}</div>
             <h3 className="font-semibold mb-2 text-sm">{feature.title}</h3>
             <p className="text-gray-400 text-xs leading-relaxed">{feature.description}</p>
           </div>
