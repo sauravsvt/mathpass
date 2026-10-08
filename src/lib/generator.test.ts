@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { constantAnchorText } from './catalog';
 import { MATH_CONSTANTS, type MathConstant } from './constants';
-import { generateOne, generatePassword, PRESET_BITS, SEPARATORS, wordCountFor, type Strategy } from './generator';
+import {
+  generateOne,
+  generatePassword,
+  LENGTH_CAP_STRENGTH_NOTE,
+  lengthCapFailureMessage,
+  PRESET_BITS,
+  SEPARATORS,
+  wordCountFor,
+  type Strategy,
+} from './generator';
 import { mixedRadixUnrank } from './keyspace';
 import { ScriptedRng } from './random';
 import { WORDLIST, WORDLIST_SIZE } from './wordlist';
@@ -114,6 +123,51 @@ describe('generateOne', () => {
         }
       }
     }
+  });
+
+  it('appends personal text as typed, except whitespace-only', () => {
+    const spaced = ' Fluffy ';
+    const withSpaces = generateOne({
+      strategy: 'constant',
+      constantId: 'pi',
+      personalSecret: spaced,
+      rng: new ScriptedRng([0, 0, 1, 2, 3]),
+      wordCount: 4,
+      estimateSecretBits: () => 4,
+    });
+    expect(withSpaces.ok).toBe(true);
+    if (!withSpaces.ok) return;
+    expect(withSpaces.password.endsWith(spaced)).toBe(true);
+    expect(withSpaces.parts.some((part) => part.kind === 'secret' && part.text === spaced)).toBe(true);
+
+    const blank = generateOne({
+      strategy: 'constant',
+      constantId: 'pi',
+      personalSecret: ' \t  ',
+      rng: new ScriptedRng([0, 0, 1, 2, 3]),
+      wordCount: 4,
+      estimateSecretBits: () => 4,
+    });
+    expect(blank.ok).toBe(true);
+    if (!blank.ok) return;
+    expect(blank.parts.some((part) => part.kind === 'secret')).toBe(false);
+    expect(blank.checklist.hasPersonalSecret).toBe(false);
+
+    const nfd = 'cafe\u0301';
+    const composed = nfd.normalize('NFC');
+    expect(composed).not.toBe(nfd);
+    const withNfd = generateOne({
+      strategy: 'constant',
+      constantId: 'pi',
+      personalSecret: nfd,
+      rng: new ScriptedRng([0, 0, 1, 2, 3]),
+      wordCount: 4,
+      estimateSecretBits: () => 4,
+    });
+    expect(withNfd.ok).toBe(true);
+    if (!withNfd.ok) return;
+    expect(withNfd.password.endsWith(nfd)).toBe(true);
+    expect(withNfd.password.endsWith(composed)).toBe(false);
   });
 
   it('keeps secrets verbatim and out of generated bits', () => {
@@ -232,6 +286,33 @@ describe('generateOne', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe('max-length');
+  });
+});
+
+describe('lengthCapFailureMessage', () => {
+  it('does not quote unconstrained bits on a miss', () => {
+    const text = lengthCapFailureMessage({
+      maxLength: 20,
+      shortestLength: 48,
+      hitCount: 0,
+      missCount: 1,
+    });
+    expect(text).toContain('48 characters');
+    expect(text).toContain('20-character');
+    expect(text).toContain(LENGTH_CAP_STRENGTH_NOTE);
+    expect(text).not.toMatch(/bits/i);
+  });
+
+  it('does not present mixed hits as the full preset', () => {
+    const text = lengthCapFailureMessage({
+      maxLength: 40,
+      shortestLength: 52,
+      hitCount: 2,
+      missCount: 3,
+    });
+    expect(text).toMatch(/not the full preset/i);
+    expect(text).toContain(LENGTH_CAP_STRENGTH_NOTE);
+    expect(text).not.toMatch(/\d+(\.\d+)? generated bits/);
   });
 });
 

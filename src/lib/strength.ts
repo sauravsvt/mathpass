@@ -55,6 +55,12 @@ export function labelForBits(bits: number): StrengthStyle {
   return { label: 'Master', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' };
 }
 
+export function labelForPreset(preset: 'everyday' | 'strong' | 'master'): StrengthStyle {
+  if (preset === 'everyday') return labelForBits(60);
+  if (preset === 'strong') return labelForBits(72);
+  return labelForBits(80);
+}
+
 export function expectedCrackTime(bits: number, rate: number): string {
   if (!Number.isFinite(bits) || bits <= 0) return 'Less than a second';
   const seconds = Math.pow(2, Math.min(bits, 256) - 1) / rate;

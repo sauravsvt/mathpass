@@ -7,6 +7,8 @@ import { MATH_CONSTANTS } from '@/lib/constants';
 import {
   generatePassword,
   getStrategyDescription,
+  LENGTH_CAP_STRENGTH_NOTE,
+  lengthCapFailureMessage,
   SEPARATORS,
   type GeneratedPassword,
   type GenerateResult,
@@ -14,7 +16,7 @@ import {
   type Preset,
   type Strategy,
 } from '@/lib/generator';
-import { labelForBits, loadGuessEstimator, secretCredit } from '@/lib/strength';
+import { labelForPreset, loadGuessEstimator, secretCredit } from '@/lib/strength';
 
 interface PasswordGeneratorProps {
   initialConstantId?: string;
@@ -79,13 +81,12 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
   }, [initialConstantId]);
 
   useEffect(() => {
-    const trimmed = personalSecret.normalize('NFC').trim();
-    if (!trimmed) {
+    if (personalSecret.trim() === '') {
       setSecretBits(0);
       return;
     }
     try {
-      setSecretBits(secretCredit(trimmed, catalogUserInputs()));
+      setSecretBits(secretCredit(personalSecret, catalogUserInputs()));
     } catch {
       setSecretBits(0);
     }
@@ -99,16 +100,21 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
       strategy,
       count,
       constantId: constantId || undefined,
-      personalSecret: personalSecret.normalize('NFC').trim() || undefined,
+      personalSecret: personalSecret.trim() === '' ? undefined : personalSecret,
       separator: separator || undefined,
       maxLength: max && Number.isFinite(max) ? max : undefined,
     });
     const ok = results.filter(isGenerated);
-    const failed = results.find((result) => !result.ok);
+    const misses = results.filter((result): result is Extract<GenerateResult, { ok: false }> => !result.ok);
     setPasswords(ok);
-    if (failed && !failed.ok) {
+    if (misses.length && max) {
       setFailure(
-        `This sample was ${failed.shortestLength} characters (${failed.bestBits.toFixed(1)} generated bits) and missed the ${max}-character limit. MathPass will not truncate or secretly resample a smaller keyspace. Use a higher limit or a lower preset.`,
+        lengthCapFailureMessage({
+          maxLength: max,
+          shortestLength: Math.min(...misses.map((miss) => miss.shortestLength)),
+          hitCount: ok.length,
+          missCount: misses.length,
+        }),
       );
     } else {
       setFailure(null);
@@ -143,6 +149,8 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
 
   const secretHasSpaces = personalSecret.includes(' ');
   const secretHasNonAscii = /[^\x20-\x7E]/.test(personalSecret);
+  const parsedMaxLength = maxLength ? Number(maxLength) : undefined;
+  const lengthCapOn = Boolean(parsedMaxLength && Number.isFinite(parsedMaxLength) && parsedMaxLength > 0);
   const presetStats = presetLabels.map((item) => ({
     ...item,
     sample: typicalSample({
@@ -364,7 +372,7 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
           </div>
 
           {passwords.map((pw, index) => {
-            const style = labelForBits(pw.generatedBits);
+            const style = labelForPreset(pw.preset);
             const isVisible = visiblePasswords[index] !== false;
             const meter = Math.min(100, (pw.generatedBits / 80) * 100);
 
@@ -409,19 +417,31 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-xs">
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-gray-400 font-medium">Generated keyspace</span>
-                      <span className="font-bold px-2 py-0.5 rounded-full" style={{ color: style.color, backgroundColor: style.bg }}>
-                        {style.label} · {pw.generatedBits.toFixed(1)} bits
-                      </span>
-                    </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${meter}%`, backgroundColor: style.color }} />
-                    </div>
+                    {lengthCapOn ? (
+                      <p className="text-amber-300 font-medium leading-relaxed">{LENGTH_CAP_STRENGTH_NOTE}</p>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-gray-400 font-medium">Generated keyspace</span>
+                          <span className="font-bold px-2 py-0.5 rounded-full" style={{ color: style.color, backgroundColor: style.bg }}>
+                            {style.label} · {pw.generatedBits.toFixed(1)} bits
+                          </span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${meter}%`, backgroundColor: style.color }} />
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="text-gray-300">
-                    <div>Fast hash (~10^12/s): {pw.crackTimeFast}</div>
-                    <div>Slow hash (~10^5/s): {pw.crackTimeSlow}</div>
+                    {lengthCapOn ? (
+                      <p>Crack times from the uncapped keyspace are omitted while a length cap is on.</p>
+                    ) : (
+                      <>
+                        <div>Fast hash (~10^12/s): {pw.crackTimeFast}</div>
+                        <div>Slow hash (~10^5/s): {pw.crackTimeSlow}</div>
+                      </>
+                    )}
                     {pw.secretBits > 0 && (
                       <div className="text-accent-300 mt-1">
                         Personal text estimated +{pw.secretBits.toFixed(1)} bits, not included above
@@ -446,7 +466,9 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
 
                 <details className="p-3.5 rounded-xl bg-white/5 border border-white/10 mb-3">
                   <summary className="text-xs font-bold text-primary-300 uppercase tracking-wide cursor-pointer">
-                    Entropy ledger · sample #{groupInt(pw.rank)} of {groupInt(pw.keyspace)}
+                    {isVisible
+                      ? `Entropy ledger · sample #${groupInt(pw.rank)} of ${groupInt(pw.keyspace)}`
+                      : `Entropy ledger · rank hidden · ${groupInt(pw.keyspace)} outputs`}
                   </summary>
                   <p className="text-[11px] text-gray-400 mt-2 mb-3">
                     Rank is the mixed-radix index of this string in the generator&apos;s equally likely outputs. Bits are log2 of each term&apos;s choices.
@@ -469,9 +491,9 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
                           return rows;
                         }, []).map((row, rowIndex) => (
                           <tr key={`${row.kind}-${rowIndex}`} className="border-t border-white/5">
-                            <td className="py-1 pr-2 break-all">{ledgerLabel(row)}</td>
+                            <td className="py-1 pr-2 break-all">{isVisible ? ledgerLabel(row) : '•'.repeat(Math.max(1, row.text.length))}</td>
                             <td className="py-1 pr-2">{row.choices}</td>
-                            <td className="py-1 pr-2">{row.index}</td>
+                            <td className="py-1 pr-2">{isVisible ? row.index : '—'}</td>
                             <td className="py-1 pr-2">{row.bits.toFixed(2)}</td>
                             <td className="py-1">{row.running.toFixed(2)}</td>
                           </tr>
@@ -483,7 +505,9 @@ export default function PasswordGenerator({ initialConstantId }: PasswordGenerat
 
                 <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 mb-3">
                   <div className="text-xs font-bold text-primary-300 uppercase tracking-wide mb-0.5">How to remember it</div>
-                  <p className="text-xs text-gray-300 font-medium leading-relaxed">{pw.mnemonic}</p>
+                  <p className="text-xs text-gray-300 font-medium leading-relaxed">
+                    {isVisible ? pw.mnemonic : 'Hidden with the password. Rank and recall both reconstruct the string.'}
+                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">

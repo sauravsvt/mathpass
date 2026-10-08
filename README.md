@@ -55,7 +55,7 @@ Crack-time labels state two rates: about 10^12 guesses/s for a fast hash, and ab
 - **44 mathematical and physical constants** as public ASCII cues (`Pi3.1416`, `Light299792458`, `Gamma0.57722`).
 - **3 cue styles**: Constant, Pun, and Formula. Formula magnitudes join with a colon (`PV=nRT:8.3145`) so the identity is not a false equation.
 - **Entropy ledger** with per-term choices, dice codes, running bits, and mixed-radix rank.
-- **Decoder** in the tester: a MathPass passphrase shows exact generated bits, not a zxcvbn guess.
+- **Decoder** in the tester: the headline is a dictionary-aware guess estimate. A MathPass-shaped string also shows a second panel: bits if a random cue and random separator were used. Personal text is not in that count.
 - **Generated in the browser**. MathPass does not send the password to a MathPass server.
 - **Searchable constants library** with one-click generation.
 

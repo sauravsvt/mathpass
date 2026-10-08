@@ -32,7 +32,8 @@ export function punAnchorText(pun: string, constant: MathConstant): string {
 export function formulaAnchorText(token: string, constant: MathConstant): string {
   let text = toPrintableAscii(token);
   if (!text) text = constant.handle;
-  if (!/[A-Z]/.test(text)) {
+  const keepMarkup = /[=^()]/.test(text);
+  if (!keepMarkup && !/[A-Z]/.test(text)) {
     text = text.charAt(0).toUpperCase() + text.slice(1);
   }
   if (!/\d/.test(text)) {
@@ -70,7 +71,7 @@ export function formulaChoices(
     return [
       {
         formula: {
-          token: `${pinned.handle}=${constantCue(pinned)}`,
+          token: `${pinned.handle}${FORMULA_CUE_JOIN}${constantCue(pinned)}`,
           constantIds: [pinned.id],
           desc: `${pinned.name} identity`,
         },
@@ -92,7 +93,6 @@ export function catalogUserInputs(constants: readonly MathConstant[] = MATH_CONS
     inputs.add(constant.handle);
     inputs.add(constant.name);
     inputs.add(constant.symbol);
-    inputs.add(famousDisplay(constant.famous));
     inputs.add(constantCue(constant));
     inputs.add(constantAnchorText(constant));
     for (const pun of constant.puns) {

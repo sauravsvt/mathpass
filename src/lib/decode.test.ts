@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PI_ANCHOR } from './catalog';
 import { MATH_CONSTANTS } from './constants';
 import { decodeMathPass } from './decode';
 import { generateOne } from './generator';
@@ -41,7 +42,7 @@ describe('decodeMathPass', () => {
     }
   });
 
-  it('treats a trailing non-word as a secret', () => {
+  it('labels a pinned decode as an unpinned upper bound', () => {
     const result = generateOne({
       strategy: 'constant',
       constantId: 'pi',
@@ -56,8 +57,18 @@ describe('decodeMathPass', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.secret).toBe('Fluffy');
-    expect(decoded.assumed).toMatch(/Pinning/);
+    expect(decoded.assumed).toMatch(/upper bound/i);
+    expect(decoded.assumed).toMatch(/personal text/i);
+    expect(decoded.assumed).not.toMatch(/no personal text/i);
+    expect(decoded.generatedBits).toBeGreaterThan(result.generatedBits);
     expect(decoded.generatedBits).toBeCloseTo(result.generatedBits + Math.log2(MATH_CONSTANTS.length), 10);
+  });
+
+  it('rejects fewer than four words', () => {
+    const short = decodeMathPass(`${PI_ANCHOR}-apple`);
+    expect(short.ok).toBe(false);
+    if (short.ok) return;
+    expect(short.reason).toBe('too-few-words');
   });
 
   it('rejects a random typed password', () => {

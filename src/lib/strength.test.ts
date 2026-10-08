@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { typicalSample } from './accounting';
 import { catalogUserInputs } from './catalog';
 import {
   analyzePassword,
@@ -6,6 +7,7 @@ import {
   expectedCrackTime,
   GUESS_RATES,
   labelForBits,
+  labelForPreset,
   loadGuessEstimator,
   SECRET_CAP_BITS,
   secretCredit,
@@ -79,5 +81,14 @@ describe('labelForBits', () => {
     expect(labelForBits(72).label).toBe('Strong');
     expect(labelForBits(79).label).toBe('Strong');
     expect(labelForBits(80).label).toBe('Master');
+  });
+});
+
+describe('labelForPreset', () => {
+  it('keeps pinned Strong labeled Strong when bits cross 80', () => {
+    const pinned = typicalSample({ preset: 'strong', pinnedId: 'pi' });
+    expect(pinned.bits).toBeCloseTo(80.5, 1);
+    expect(labelForBits(pinned.bits).label).toBe('Master');
+    expect(labelForPreset(pinned.preset).label).toBe('Strong');
   });
 });

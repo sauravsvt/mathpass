@@ -8,7 +8,7 @@ import {
 import { MATH_CONSTANTS, type MathConstant } from './constants';
 import { FORMULA_TOKENS, type FormulaToken } from './formulas';
 import { mixedRadixRank, productOfChoices } from './keyspace';
-import { SEPARATORS, type Part, type Strategy } from './generator';
+import { MIN_WORDS, SEPARATORS, type Part, type Strategy } from './generator';
 import { bitsFromParts } from './strength';
 import { indexToDice, longestWordPrefix, WORD_INDEX, WORDLIST, WORDLIST_SIZE } from './wordlist';
 
@@ -177,8 +177,8 @@ export function decodeMathPass(
     break;
   }
 
-  if (wordParts.length < 1) {
-    return { ok: false, reason: 'no-words' };
+  if (wordParts.length < MIN_WORDS) {
+    return { ok: false, reason: 'too-few-words' };
   }
 
   const secret = cursor || undefined;
@@ -207,6 +207,8 @@ export function decodeMathPass(
     rank: mixedRadixRank(parts).toString(),
     constants: [hit.constant],
     secret,
-    assumed: 'Unpinned cue, random separator, public wordlist. Pinning a constant would remove the cue bits.',
+    assumed: secret
+      ? 'Unpinned cue and random separator. Personal text was parsed and is not in these bits. If the cue or separator was pinned at generate time, generated bits are lower than this unpinned upper bound.'
+      : 'Unpinned cue and random separator, no personal text. If the cue or separator was pinned at generate time, generated bits are lower than this unpinned upper bound.',
   };
 }

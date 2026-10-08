@@ -25,6 +25,25 @@ export const PRESET_BITS: Record<Preset, number> = {
 
 export const SEPARATORS = ['-', '_', '+', '=', '!', '#', '@', '*'] as const;
 export const MIN_WORDS = 4;
+export const LENGTH_CAP_STRENGTH_NOTE =
+  'Length cap is on, so the unconditional keyspace is not the strength.';
+
+export function lengthCapFailureMessage(options: {
+  maxLength: number;
+  shortestLength: number;
+  hitCount: number;
+  missCount: number;
+}): string {
+  const mixed = options.hitCount > 0 && options.missCount > 0;
+  const miss =
+    options.missCount === 1
+      ? `This sample was ${options.shortestLength} characters and missed the ${options.maxLength}-character limit.`
+      : `${options.missCount} samples missed the ${options.maxLength}-character limit (one was ${options.shortestLength} characters).`;
+  const mixedLine = mixed
+    ? ' Shown strings still came from the uncapped generator and are not the full preset under a length filter.'
+    : '';
+  return `${miss}${mixedLine} MathPass will not truncate or secretly resample a smaller keyspace. ${LENGTH_CAP_STRENGTH_NOTE}`;
+}
 
 export interface Part {
   kind: PartKind;
@@ -132,7 +151,8 @@ function recallFromParts(parts: Part[], password: string): string {
 }
 
 function normalizeSecret(secret: string): string {
-  return secret.normalize('NFC').trim();
+  if (secret.trim() === '') return '';
+  return secret;
 }
 
 export function generateOne(options: GeneratorOptions): GenerateResult {

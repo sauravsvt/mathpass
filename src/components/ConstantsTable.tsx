@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MATH_CONSTANTS, type MathConstant } from '@/lib/constants';
+import { MATH_CONSTANTS } from '@/lib/constants';
+import { formatCue } from '@/lib/cue';
 
 interface ConstantsTableProps {
   onSelectConstant?: (constantId: string) => void;
@@ -114,8 +115,11 @@ export default function ConstantsTable({ onSelectConstant }: ConstantsTableProps
                     </span>
                   </td>
                   <td className="py-4 px-4 font-mono text-xs text-gray-300">
-                    <span className="bg-black/30 px-2 py-1 rounded border border-white/5 inline-block">
-                      {c.value.slice(0, 16)}...
+                    <span
+                      className="bg-black/30 px-2 py-1 rounded border border-white/5 inline-block"
+                      title={c.value}
+                    >
+                      {formatCue(c.value)}
                     </span>
                   </td>
                   <td className="py-4 px-4 text-xs text-gray-400 hidden lg:table-cell max-w-xs">

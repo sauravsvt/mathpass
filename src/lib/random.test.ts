@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { createRng, ScriptedRng } from './random';
+import { createRng, ScriptedRng, type ByteSource } from './random';
 
 describe('createRng', () => {
   it('returns values in [0, n) for a range of n', () => {
@@ -21,10 +21,11 @@ describe('createRng', () => {
     const range = 0x100000000;
     const limit = Math.floor(range / n) * n;
     let calls = 0;
-    const source = {
-      getRandomValues(array: Uint32Array) {
+    const source: ByteSource = {
+      getRandomValues<T extends ArrayBufferView>(array: T): T {
         calls += 1;
-        array[0] = calls === 1 ? limit : 0;
+        const view = new Uint32Array(array.buffer, array.byteOffset, Math.max(1, Math.floor(array.byteLength / 4)));
+        view[0] = calls === 1 ? limit : 0;
         return array;
       },
     };

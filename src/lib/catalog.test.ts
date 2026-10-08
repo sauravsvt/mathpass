@@ -4,7 +4,9 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
   allPublicAnchors,
+  catalogUserInputs,
   constantAnchorText,
+  constantCue,
   famousDisplay,
   formulaAnchorText,
   noAnchorIsPrefixOfAnother,
@@ -106,5 +108,33 @@ describe('wordlist', () => {
 describe('famousDisplay', () => {
   it('puts a decimal after the first digit of the stored famous slice', () => {
     expect(famousDisplay('31415')).toBe('3.1415');
+  });
+});
+
+describe('catalogUserInputs', () => {
+  it('uses magnitude-correct cues, not shifted famous decimals', () => {
+    const gamma = MATH_CONSTANTS.find((c) => c.id === 'euler_gamma')!;
+    const inputs = catalogUserInputs();
+    expect(inputs).toContain(constantCue(gamma));
+    expect(inputs).not.toContain(famousDisplay(gamma.famous));
+    expect(inputs).not.toContain('5.7721');
+  });
+});
+
+describe('catalog facts', () => {
+  it('does not glue 137 onto the fine-structure digit string', () => {
+    const alpha = MATH_CONSTANTS.find((c) => c.id === 'fine_structure')!;
+    expect(alpha.digits).toBe('72973525693');
+    expect(alpha.digits.endsWith('137')).toBe(false);
+  });
+
+  it('softens overstated fun facts', () => {
+    const byId = Object.fromEntries(MATH_CONSTANTS.map((c) => [c.id, c]));
+    expect(byId.phi.funFact).toMatch(/overstated/i);
+    expect(byId.feigenbaum.funFact).not.toMatch(/all chaotic systems/i);
+    expect(byId.mills.funFact).toMatch(/Riemann/i);
+    expect(byId.absolute_zero.description).not.toMatch(/thermal motion stops/i);
+    expect(byId.absolute_zero.funFact).not.toMatch(/atoms condense/i);
+    expect(byId.cbrt2.year).not.toMatch(/46-120/);
   });
 });

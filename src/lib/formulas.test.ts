@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formulaAnchorText, formulaChoices } from './catalog';
+import { constantCue, formulaAnchorText, formulaChoices } from './catalog';
 import { MATH_CONSTANTS } from './constants';
 import { parseValue } from './cue';
 import { FORMULA_TOKENS } from './formulas';
@@ -34,6 +34,20 @@ describe('formula anchors', () => {
   it('keeps identities that already contain a digit', () => {
     expect(formulaAnchorText('E=mc^2', byId('speed_of_light'))).toBe('E=mc^2');
     expect(formulaAnchorText('e^(i*Pi)+1=0', byId('e'))).toBe('e^(i*Pi)+1=0');
+  });
+
+  it('does not capitalize tokens that contain =, ^, or (', () => {
+    expect(formulaAnchorText('a^2+b^2=c^2', byId('sqrt2'))).toBe('a^2+b^2=c^2');
+    expect(formulaAnchorText('ln(2)', byId('ln2'))).toBe('ln(2)');
+  });
+
+  it('uses a colon in the no-formula fallback, not an equals sign', () => {
+    const gamma = byId('euler_gamma');
+    const fallback = formulaChoices([], MATH_CONSTANTS, 'euler_gamma');
+    expect(fallback).toHaveLength(1);
+    expect(fallback[0].formula.token).toBe(`${gamma.handle}:${constantCue(gamma)}`);
+    expect(fallback[0].formula.token).not.toMatch(/=/);
+    expect(formulaAnchorText(fallback[0].formula.token, gamma)).toBe(`${gamma.handle}:${constantCue(gamma)}`);
   });
 
   it('covers every catalog formula token', () => {
