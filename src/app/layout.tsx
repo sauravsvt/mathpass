@@ -1,14 +1,17 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mathpass.voxonlabs.com';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://mathpass.vercel.app'),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: 'MathPass — Memorable Passwords from Mathematical Constants',
+    default: 'MathPass — Memorable Passwords from Mathematical & Physical Constants',
     template: '%s | MathPass',
   },
   description:
-    'Generate unbreakable, memorable passwords using π, e, φ, √2, and 35+ mathematical constants. Smart mnemonics, math puns, formulas, and 80+ bits of entropy. 100% free and client-side.',
+    'Generate unbreakable, memorable passwords using π, e, φ, Planck’s h, Speed of Light c, and 40+ mathematical & physical constants. Zero-knowledge, hardware CSPRNG, and dual-layer security.',
   keywords: [
     'password generator',
     'mathematical constants',
@@ -30,6 +33,7 @@ export const metadata: Metadata = {
     'password strength checker',
     'free password generator online',
     'client side password generator',
+    'voxonlabs',
   ],
   authors: [{ name: 'Saurav Shriwastav', url: 'https://github.com/sauravsvt' }],
   creator: 'Saurav Shriwastav',
@@ -48,29 +52,29 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://mathpass.vercel.app',
-    siteName: 'MathPass',
-    title: 'MathPass — Memorable Passwords from Mathematical Constants',
+    url: siteUrl,
+    siteName: 'MathPass · Voxon Labs',
+    title: 'MathPass — Memorable Passwords from Mathematical & Physical Constants',
     description:
-      'Generate unbreakable, memorable passwords using π, e, φ, and 35+ math constants. Free, client-side, and cognitively anchored.',
+      'Generate unbreakable, memorable passwords using π, e, φ, Planck’s h, and 40+ constants. Client-side, hardware CSPRNG, and dual-layer defense.',
     images: [
       {
         url: '/favicon.svg',
         width: 1200,
         height: 630,
-        alt: 'MathPass - Mathematical Constant Password Generator',
+        alt: 'MathPass - Constant Powered Password Generator',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MathPass — Memorable Passwords from Math Constants',
+    title: 'MathPass — Memorable Passwords from Constants',
     description:
-      'Generate strong passwords using π, e, φ, and 35+ constants. Smart mnemonics and high entropy.',
+      'Generate strong passwords using π, e, φ, Planck’s h, and 40+ constants. Dual-layer security.',
     images: ['/favicon.svg'],
   },
   alternates: {
-    canonical: 'https://mathpass.vercel.app',
+    canonical: siteUrl,
   },
   category: 'Security & Utility',
 };
@@ -81,6 +85,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
     <html lang="en" className="scroll-smooth">
@@ -88,6 +93,23 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/* Google Analytics 4 (activates when NEXT_PUBLIC_GA_ID is provided) */}
+        {gaId && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}');
+                `,
+              }}
+            />
+          </>
+        )}
 
         {/* Google AdSense Script (activates when NEXT_PUBLIC_ADSENSE_ID is provided) */}
         {adsenseId && (
@@ -107,11 +129,11 @@ export default function RootLayout({
               '@graph': [
                 {
                   '@type': 'WebApplication',
-                  '@id': 'https://mathpass.vercel.app/#app',
+                  '@id': `${siteUrl}/#app`,
                   name: 'MathPass',
-                  url: 'https://mathpass.vercel.app',
+                  url: siteUrl,
                   description:
-                    'Generate strong, memorable passwords using mathematical constants like π, e, φ, and more.',
+                    'Generate strong, memorable passwords using mathematical and physical constants like π, e, φ, Planck’s h, and more.',
                   applicationCategory: 'SecurityApplication',
                   operatingSystem: 'Any',
                   browserRequirements: 'Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.',
@@ -121,11 +143,11 @@ export default function RootLayout({
                     priceCurrency: 'USD',
                   },
                   featureList: [
-                    'Password generation using 35+ mathematical constants',
+                    'Password generation using 40+ mathematical and physical constants',
                     '6 cognitive strategies including Smart Mnemonic and Math Puns',
                     'Client-side generation with zero server data storage',
                     'Interactive password strength and entropy tester',
-                    'Comprehensive mathematical constants encyclopedia',
+                    'Comprehensive constants encyclopedia',
                     'One-click clipboard copying',
                   ],
                 },
@@ -133,7 +155,7 @@ export default function RootLayout({
                   '@type': 'HowTo',
                   name: 'How to Generate a Memorable Strong Password with Mathematical Constants',
                   description:
-                    'A step-by-step guide to generating secure passwords that are easy to remember using mathematical constants.',
+                    'A step-by-step guide to generating secure passwords that are easy to remember using constants.',
                   step: [
                     {
                       '@type': 'HowToStep',
@@ -159,6 +181,8 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         {children}
+        {/* Real-time Vercel Web Analytics */}
+        <Analytics />
       </body>
     </html>
   );
