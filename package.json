@@ -1,0 +1,31 @@
+{
+  "name": "mathpass",
+  "version": "1.0.0",
+  "description": "Memorable, high-entropy password generator powered by mathematical constants and dual-layer CSPRNG security.",
+  "author": "Saurav Shriwastav",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sauravsvt/mathpass"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5"
+  }
+}
